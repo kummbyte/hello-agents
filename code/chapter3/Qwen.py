@@ -9,8 +9,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 model_id = "Qwen/Qwen1.5-0.5B-Chat"
 
 # 设置设备，优先使用GPU
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using device: {device}")
+if torch.cuda.is_available(): 
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+
+print(f"使用设备：{device}")
 
 # 加载分词器
 tokenizer = AutoTokenizer.from_pretrained(model_id)
