@@ -3,6 +3,7 @@ import os
 from typing import Optional
 from openai import OpenAI
 from hello_agents import HelloAgentsLLM
+from hello_agents.core.exceptions import HelloAgentsException
 
 class MyLLM(HelloAgentsLLM):
     def __init__(
@@ -38,3 +39,31 @@ class MyLLM(HelloAgentsLLM):
         else:
             # 如果不是 modelscope, 则完全使用父类的原始逻辑来处理
             super().__init__(model=model, api_key=api_key, base_url=base_url, provider=provider, **kwargs)
+
+    def think(self, messages, temperature=None):
+        if self.provider != "modelscope":
+            yield from super().think(messages, temperature=temperature)
+            return
+
+        print(f"🧠 正在调用 {self.model} 模型...")
+        try:
+            response = self._client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature if temperature is not None else self.temperature,
+                max_tokens=self.max_tokens,
+                stream=True,
+            )
+            print("✅ 大语言模型响应成功:")
+            for chunk in response:
+                # ModelScope 的结束块可能没有 choices。
+                if not chunk.choices:
+                    continue
+                content = chunk.choices[0].delta.content or ""
+                if content:
+                    print(content, end="", flush=True)
+                    yield content
+            print()
+        except Exception as e:
+            print(f"❌ 调用LLM API时发生错误: {e}")
+            raise HelloAgentsException(f"LLM调用失败: {e}") from e
