@@ -16,13 +16,22 @@ from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
 from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.conditions import TextMentionTermination
 from autogen_agentchat.ui import Console
+from autogen_core.models import ModelFamily
+
 
 def create_openai_model_client():
     """创建 OpenAI 模型客户端用于测试"""
     return OpenAIChatCompletionClient(
-        model=os.getenv("LLM_MODEL_ID", "gpt-4o"),
+        model=os.getenv("LLM_MODEL_ID", "deepseek-v4-flash"),
         api_key=os.getenv("LLM_API_KEY"),
-        base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+        base_url=os.getenv("LLM_BASE_URL", "https://api.deepseek.com"),
+        model_info={
+        "vision": False,
+        "function_calling": False,
+        "json_output": False,
+        "structured_output": False,
+        "family": ModelFamily.UNKNOWN,
+        }
     )
 
 def create_product_manager(model_client):

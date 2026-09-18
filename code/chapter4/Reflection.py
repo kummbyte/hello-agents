@@ -158,6 +158,6 @@ if __name__ == '__main__':
     agent = ReflectionAgent(llm_client, max_iterations=2)
 
     # 3. 定义任务并运行智能体
-    task = "编写一个Python函数，找出1到n之间所有的素数 (prime numbers)。"
+    task = "编写一个Python函数，找出1到n之间所有的素数 (prime numbers)，先使用最基础的方法实现。"
     agent.run(task)
 
