@@ -1,16 +1,12 @@
-from hello_agents import HelloAgentsLLM
-
-
 from dotenv import load_dotenv
-from hello_agents import HelloAgentsLLM
+from my_llm import MyLLM
 
 load_dotenv()
 
-# 无需传入 provider，框架会自动检测
-llm = HelloAgentsLLM() 
-# 框架内部日志会显示检测到 provider 为 'ollama'
+# 使用项目的 ModelScope 兼容客户端
+llm = MyLLM(provider="modelscope")
 
 # 后续调用方式完全不变
 messages = [{"role": "user", "content": "你好！"}]
-for chunk in llm.think(messages):
-    print(chunk, end="")
+for _ in llm.think(messages):
+    pass

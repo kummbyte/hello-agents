@@ -1,14 +1,15 @@
 # test_simple_agent.py
 from dotenv import load_dotenv
-from hello_agents import HelloAgentsLLM, ToolRegistry
+from hello_agents import ToolRegistry
 from hello_agents.tools import CalculatorTool
+from my_llm import MyLLM
 from my_simple_agent import MySimpleAgent
 
 # 加载环境变量
 load_dotenv()
 
 # 创建LLM实例
-llm = HelloAgentsLLM()
+llm = MyLLM(provider="modelscope")
 
 # 测试1：基础对话Agent（无工具）
 print("=== 测试1：基础对话 ===")
