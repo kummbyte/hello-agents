@@ -13,12 +13,24 @@
 from dotenv import load_dotenv
 load_dotenv()
 import os
+
+# Gradio 启动时会通过 HTTP 请求访问自己的本地接口。
+# 明确将本机地址加入代理例外，避免 localhost 请求被代理软件拦截。
+for _proxy_var in ("NO_PROXY", "no_proxy"):
+    _proxy_hosts = [item.strip() for item in os.environ.get(_proxy_var, "").split(",") if item.strip()]
+    for _local_host in ("localhost", "127.0.0.1", "::1"):
+        if _local_host not in _proxy_hosts:
+            _proxy_hosts.append(_local_host)
+    os.environ[_proxy_var] = ",".join(_proxy_hosts)
+
 import time
 import json
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 from hello_agents.tools import MemoryTool, RAGTool
 import gradio as gr
+
+_GRADIO_MAJOR_VERSION = int(gr.__version__.split(".", 1)[0])
 
 class PDFLearningAssistant:
     """智能文档问答助手"""
@@ -67,12 +79,19 @@ class PDFLearningAssistant:
                 "action":"add_document",
                 "file_path":pdf_path,
                 "chunk_size":1000,
-                "chunk_overlap":200
+                "chunk_overlap":200,
+                "batch_size":8,
             })
 
             process_time = time.time() - start_time
 
-            # RAG工具返回的是字符串消息
+            # RAGTool 返回字符串消息；只有真正完成向量入库才更新学习状态。
+            if not isinstance(result, str) or not result.startswith("✅"):
+                return {
+                    "success": False,
+                    "message": str(result),
+                }
+
             self.current_document = os.path.basename(pdf_path)
             self.stats["documents_loaded"] += 1
 
@@ -274,8 +293,14 @@ def create_gradio_ui():
 
     def chat(message: str, history: List) -> Tuple[str, List]:
         """聊天功能"""
+        history = list(history or [])
+
         if assistant_state["assistant"] is None:
-            return "", history + [[message, "❌ 请先初始化助手并加载文档"]]
+            history.extend([
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": "❌ 请先初始化助手并加载文档"},
+            ])
+            return "", history
 
         if not message.strip():
             return "", history
@@ -290,7 +315,10 @@ def create_gradio_ui():
             response = assistant_state["assistant"].ask(message)
             response = f"💡 **回答**\n\n{response}"
 
-        history.append([message, response])
+        history.extend([
+            {"role": "user", "content": message},
+            {"role": "assistant", "content": response},
+        ])
         return "", history
 
     def add_note_ui(note_content: str, concept: str) -> str:
@@ -334,8 +362,11 @@ def create_gradio_ui():
 
         return result
 
-    # 创建Gradio界面
-    with gr.Blocks(title="智能文档问答助手", theme=gr.themes.Soft()) as demo:
+    blocks_kwargs = {"title": "智能文档问答助手"}
+    if _GRADIO_MAJOR_VERSION < 6:
+        blocks_kwargs["theme"] = gr.themes.Soft()
+
+    with gr.Blocks(**blocks_kwargs) as demo:
         gr.Markdown("""
         # 📚 智能文档问答助手
 
@@ -374,7 +405,8 @@ def create_gradio_ui():
             chatbot = gr.Chatbot(
                 label="对话历史",
                 height=400,
-                bubble_full_width=False
+                type="messages",
+                allow_tags=False
             )
             with gr.Row():
                 msg_input = gr.Textbox(
@@ -435,14 +467,17 @@ def main():
     print("正在启动Web界面...\n")
 
     demo = create_gradio_ui()
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
-        show_error=True
-    )
+    launch_kwargs = {
+        "server_name": "127.0.0.1",
+        # 不固定端口；若 7860 被占用，Gradio 会自动尝试后续端口。
+        "server_port": None,
+        "share": False,
+        "show_error": True,
+    }
+    if _GRADIO_MAJOR_VERSION >= 6:
+        launch_kwargs["theme"] = gr.themes.Soft()
+    demo.launch(**launch_kwargs)
 
 
 if __name__ == "__main__":
     main()
-
