@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from hello_agents import SimpleAgent, HelloAgentsLLM, ToolRegistry
 from hello_agents.context import ContextBuilder, ContextConfig
-#from hello_agents.tools import MemoryTool, RAGTool
+from hello_agents.tools import MemoryTool, RAGTool
 from hello_agents.core.message import Message
 from datetime import datetime
 
@@ -23,13 +23,13 @@ class ContextAwareAgent(SimpleAgent):
 
         
         #（Optional）
-        # self.memory_tool = MemoryTool(user_id=kwargs.get("user_id", "default")) 
-        # self.rag_tool = RAGTool(knowledge_base_path=kwargs.get("knowledge_base_path", "./kb"))
+        self.memory_tool = MemoryTool(user_id=kwargs.get("user_id", "default")) 
+        self.rag_tool = RAGTool(knowledge_base_path=kwargs.get("knowledge_base_path", "./kb"))
 
         # 初始化上下文构建器
         self.context_builder = ContextBuilder(
-            # memory_tool=self.memory_tool,
-            # rag_tool=self.rag_tool,
+            memory_tool=self.memory_tool,
+            rag_tool=self.rag_tool,
             config=ContextConfig(max_tokens=4000)
         )
 
@@ -50,7 +50,7 @@ class ContextAwareAgent(SimpleAgent):
             {"role": "system", "content": optimized_context},
             {"role": "user", "content": user_input}
         ]
-        response = self.llm.invoke(messages).content
+        response = self.llm.invoke(messages)
 
         # 3. 更新对话历史
         self.conversation_history.append(
@@ -61,12 +61,12 @@ class ContextAwareAgent(SimpleAgent):
         )
 
         # 4. 将重要交互记录到记忆系统
-        # self.memory_tool.run({
-        #     "action": "add",
-        #     "content": f"Q: {user_input}\nA: {response[:200]}...",  # 摘要
-        #     "memory_type": "episodic",
-        #     "importance": 0.6
-        # })
+        self.memory_tool.run({
+            "action": "add",
+            "content": f"Q: {user_input}\nA: {response[:200]}...",  # 摘要
+            "memory_type": "episodic",
+            "importance": 0.6
+        })
 
         return response
 
