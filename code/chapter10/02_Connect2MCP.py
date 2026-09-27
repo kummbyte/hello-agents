@@ -1,4 +1,6 @@
 import asyncio
+from pathlib import Path
+import sys
 from hello_agents.protocols import MCPClient
 
 async def connect_to_server():
@@ -17,7 +19,8 @@ async def connect_to_server():
         print(f"可用工具: {[t['name'] for t in tools]}")
 
     # 方式2：连接到自定义的Python MCP服务器
-    client = MCPClient(["python", "my_mcp_server.py"])
+    server_path = Path(__file__).with_name("my_mcp_server.py")
+    client = MCPClient([sys.executable, str(server_path)])
     async with client:
         # 使用client...
         pass
@@ -66,20 +69,31 @@ asyncio.run(discover_tools())
 
 
 async def use_tools():
-    client = MCPClient(["npx", "-y", "@modelcontextprotocol/server-filesystem", "."])
+    chapter_dir = Path(__file__).resolve().parent
+    client = MCPClient([
+        "npx", "-y",
+        "@modelcontextprotocol/server-filesystem",
+        str(chapter_dir)
+    ])
 
     async with client:
         # 读取文件
-        result = await client.call_tool("read_file", {"path": "my_README.md"})
+        result = await client.call_tool(
+            "read_file",
+            {"path": str(chapter_dir / "my_README.md")}
+        )
         print(f"文件内容：\n{result}")
 
         # 列出目录
-        result = await client.call_tool("list_directory", {"path": "."})
+        result = await client.call_tool(
+            "list_directory",
+            {"path": str(chapter_dir)}
+        )
         print(f"当前目录文件：{result}")
 
         # 写入文件
         result = await client.call_tool("write_file", {
-            "path": "output.txt",
+            "path": str(chapter_dir / "output.txt"),
             "content": "Hello from MCP!"
         })
         print(f"写入结果：{result}")
