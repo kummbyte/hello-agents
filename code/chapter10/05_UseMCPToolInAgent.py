@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.tools import MCPTool
 
@@ -32,10 +34,11 @@ agent.add_tool(fs_tool)
 
 # 示例2：连接到自定义的 Python MCP 服务器
 # 关于如何编写自定义MCP服务器，请参考10.5章节
+chapter_dir = Path(__file__).resolve().parent
 custom_tool = MCPTool(
     name="custom_server",  # 使用不同的名称
     description="自定义业务逻辑服务器",
-    server_command=["python", "my_mcp_server.py"]
+    server_command=["python", str(chapter_dir / "my_README.md")]
 )
 agent.add_tool(custom_tool)
 

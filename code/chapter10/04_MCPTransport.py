@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from hello_agents.tools import MCPTool
 
 # 1. Memory Transport - 内存传输（用于测试）
@@ -50,10 +52,11 @@ result = mcp_tool.run({"action": "list_tools"})
 print(result)
 
 # 调用工具
+chapter_dir = Path(__file__).resolve().parent
 result = mcp_tool.run({
     "action": "call_tool",
     "tool_name": "read_file",
-    "arguments": {"path": "my_README.md"}
+    "arguments": {"path": str(chapter_dir / "my_README.md")}
 })
 print(result)
 
